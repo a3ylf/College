@@ -52,7 +52,7 @@ void Delete(int pos) {
 
   struct Node *temp1 = head;
 
-  if (pos == 1) {
+  if (pos == 0) {
     head = temp1->next;
     free(temp1);
     return;
