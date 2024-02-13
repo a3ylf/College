@@ -1,5 +1,13 @@
-Faça um programa que divida em 5 processos formando uma árvore de acordo com a figura.  Cada processo de N1 a N4 deve executar um comando diferente do terminal do Linux a sua escolha (usando o comando execl de unistd.h). 
+Faça um programa que divida em 5 processos formando uma árvore de acordo com a figura.
+Cada processo de N1 a N4 deve executar um comando diferente do terminal
+do Linux a sua escolha (usando o comando execl de unistd.h). 
 
-Quando todos os processos N terminarem, os processos F1 e F2 deverão imprimir uma mensagem indicando que eles são processos filhos, e imprimir seus PID e o do seu pai P1. Apenas quando eles terminarem, o processo P1 deve imprimir a mensagem que ele é o pai e seu PID, seguida de uma mensagem de encerramento do programa.
+Quando todos os processos N terminarem, os processos F1 e F2
+deverão imprimir uma mensagem indicando que eles são processos filhos,
+e imprimir seus PID e o do seu pai P1. Apenas quando eles terminarem,
+o processo P1 deve imprimir a mensagem que ele é o pai e seu PID,
+seguida de uma mensagem de encerramento do programa.
 
-Em seguida gere um arquivo PDF único, contendo: sua identificação, o código fonte comentado, e a saída no terminal, incluindo os comandos de compilação e execução.
+Em seguida gere um arquivo PDF único, contendo: sua identificação,
+o código fonte comentado, e a saída no terminal, incluindo os comandos
+de compilação e execução.
