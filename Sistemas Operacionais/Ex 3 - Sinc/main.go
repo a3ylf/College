@@ -2,6 +2,9 @@ package main
 /*
 Os tempos dos produtores, consumidores e da limpeza do buffer estão fora de sincronia
 para mostrar que isso não faz diferença
+
+não entendi claramente se eu devo enviar a frase inteira palavra por palavra de uma vez e liberar o semáforo
+ou enviar uma palavra e liberar o semáforo, porém trocar essa lógica é bem simples
 */
 import (
 	"crypto/rand"
@@ -103,14 +106,24 @@ func producer(id int) {
 		frase[i] = randomString(wordSize)
 	}
 	// para fins de debug eu dou print na frase inteira, porém isso não consta nos requisitos
-	//fmt.Println("frase: " + frase[0] + " " + frase[1] + " " + frase[2] + " " + frase[3])
-	for _, word := range frase {
+	fmt.Println("frase: " + frase[0] + " " + frase[1] + " " + frase[2] + " " + frase[3])
+  // Versão 1: Envia a frase inteira palavra por palavra e depois libera o semáforo
+  // Dessa forma a frase fica na sequência correta, na versão 2 não, muito mais lenta que a versão 2
+	mut.Lock()
+  for _, word := range frase {
+    list.Insert(word) 
+    time.Sleep(time.Millisecond * 500) // espera meio segundo
+  }
+  mut.Unlock()
+  /*versão 2: Enviando uma palavra por vez e abrindo o semáforo
+  for _, word := range frase {
 		//envia uma palvra por vez ao buffer e espera 1 segundo, semáforo cerca a inserção na lista
 		mut.Lock()
 		list.Insert(word)
 		mut.Unlock()
 		time.Sleep(time.Second) //espera 1 segundo
 	}
+*/
 	// se chegou aqui, é porque terminou de enviar sua frase inteira, logo, este produtor
 	// terminou sua função e morreu
 	producerDead[id] = true
@@ -131,7 +144,7 @@ func consume(node *Node, id int) {
 	} else {
 		node.eachRead[id] = true          // Esse nó já leu, logo vira verdadeiro
 		node.toRead--                     // Decrementa quantos ainda faltam ler
-		fmt.Printf(node.word+" p%d ", id) //printa a palavra mais o ID
+		fmt.Printf(node.word+" p%d|", id) //printa a palavra mais o ID
 		if node.toRead == 0 {
 			fmt.Println() // Quebra a linha quando todos os consumidores leram a palavra X
 		}
