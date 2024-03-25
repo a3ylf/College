@@ -1,5 +1,8 @@
 package main
-
+/*
+Os tempos dos produtores, consumidores e da limpeza do buffer estão fora de sincronia
+para mostrar que isso não faz diferença
+*/
 import (
 	"crypto/rand"
 	"fmt"
@@ -9,21 +12,24 @@ import (
 )
 
 const (
-	MAX      = 4
-	wordSize = 4
+	MAX      = 4 // A quantidade de produtores e consumidores (4 para cada nesse caso)
+	wordSize = 4 // tamanho das palavras que serão geradas
 )
 
-// Função gera strings aleartorias
 var (
-	buffer   []string
-	mut      sync.Mutex
-	finished bool = false
-	producerDead [MAX]bool
+	mut          sync.Mutex         // semáforo
+	finished     bool       = false // verdadeira se o programa não tiver mais nada a fazer
+	producerDead [MAX]bool          // verdadeiro para cada produtor que terminou sua produção
 )
 
+/*
+Decidi implementar uma lista encadeada para melhorar minhas habilidades em GO, cada
+nó contém a palavra a ser lida (word), quantos ainda faltam ler (toRead), se um produtor X leu
+esse nó (eachRead) e o ponteiro para o próximo nó (next)
+*/
 type Node struct {
 	word     string
-	read     int
+	toRead   int
 	eachRead [MAX]bool
 	next     *Node
 }
@@ -31,11 +37,15 @@ type linkedList struct {
 	head *Node
 }
 
+// declaro a lista globalmente
 var list linkedList
 
+// Insere sempre no final da lista encadeada
 func (ll *linkedList) Insert(word string) {
 
-	newNode := &Node{word: word, read: MAX, next: nil}
+	newNode := &Node{word: word, toRead: MAX, next: nil}
+	/*toRead vem com o máximo de threads
+	  e irá ser decrementado quando algum consumidor o lê*/
 	if ll.head == nil {
 		ll.head = newNode
 	} else {
@@ -46,6 +56,8 @@ func (ll *linkedList) Insert(word string) {
 		current.next = newNode
 	}
 }
+
+// Deleta um nó da lista com base na palavra, traversa ela até encontrar
 func (ll *linkedList) Delete(word string) {
 	if ll.head == nil {
 		return
@@ -61,8 +73,11 @@ func (ll *linkedList) Delete(word string) {
 			return
 		}
 		prev = prev.next
+		//go possui coleta de lixo, não é preciso dar free no nó excluido
 	}
 }
+
+// Função gera strings aleartorias (Peguei de um outro projeto meu)
 func randomString(length int) string {
 	const charset = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789"
 
@@ -80,25 +95,32 @@ func randomString(length int) string {
 	return string(randomString)
 }
 
-func producer(id int ,wg *sync.WaitGroup) {
-	defer wg.Done()
+func producer(id int) {
 	var frase [4]string
 	//gerando uma frase com 4 palavras geradas aleartoriamente
 
 	for i := 0; i < 4; i++ {
 		frase[i] = randomString(wordSize)
 	}
-	fmt.Println("frase: " + frase[0] + " " + frase[1] + " " + frase[2] + " " + frase[3])
+	// para fins de debug eu dou print na frase inteira, porém isso não consta nos requisitos
+	//fmt.Println("frase: " + frase[0] + " " + frase[1] + " " + frase[2] + " " + frase[3])
 	for _, word := range frase {
-		//envia uma palvra por vez ao buffer e espera 1 segundo
+		//envia uma palvra por vez ao buffer e espera 1 segundo, semáforo cerca a inserção na lista
 		mut.Lock()
 		list.Insert(word)
 		mut.Unlock()
-		time.Sleep(time.Second)
+		time.Sleep(time.Second) //espera 1 segundo
 	}
+	// se chegou aqui, é porque terminou de enviar sua frase inteira, logo, este produtor
+	// terminou sua função e morreu
 	producerDead[id] = true
 }
 
+/*
+separei a função de consumir em si para poder utilizar recursão.
+O código checa se o nó já foi lido por esse consumidor X, caso não tenha sido lido
+lê, caso contrário checa o próximo, se o nó for nulo retorna no começo
+*/
 func consume(node *Node, id int) {
 	if node == nil {
 		return
@@ -107,79 +129,99 @@ func consume(node *Node, id int) {
 	if node.eachRead[id] {
 		consume(node.next, id)
 	} else {
-		node.eachRead[id] = true
-		node.read--
-		fmt.Printf(node.word + " p%d ", id)
-		if node.read == 0 {
-		  fmt.Println()
-    }
-	}
-}
-
-func consumer(id int, wg *sync.WaitGroup) {
-	defer wg.Done()
-	for !finished {
-		if list.head != nil {
-			mut.Lock()
-			consume(list.head, id)
-			mut.Unlock()
-			time.Sleep(time.Millisecond*200)
+		node.eachRead[id] = true          // Esse nó já leu, logo vira verdadeiro
+		node.toRead--                     // Decrementa quantos ainda faltam ler
+		fmt.Printf(node.word+" p%d ", id) //printa a palavra mais o ID
+		if node.toRead == 0 {
+			fmt.Println() // Quebra a linha quando todos os consumidores leram a palavra X
 		}
 	}
 }
 
+/* 
+  waitGroup nesse caso é utilizado para fazer a thread principal esperar os
+  consumidores terminarem para poder finalizar o código
+  
+  enquanto a thread main não sinalizar que acabou, continua.const
+  Se a lista encadeada não estiver vazia no momento, chama a função acima de consumir
+  espera 200 milisegundos
+*/
+func consumer(id int, wg *sync.WaitGroup) {
+	defer wg.Done()
+	for !finished {
+		if list.head != nil {
+		  //semáforo ativa na hora de consumir
+			mut.Lock()
+			consume(list.head, id)
+			mut.Unlock()
+			time.Sleep(time.Millisecond * 200)
+		}
+	}
+}
+/*
+Em go, uma função é concorrente quando se coloca o prefixo go antes de chamar ela,
+no caso estou criando 4 produtores e 4 consumidores, esse numero pode ser facilmente
+modificado ao alterar a variável global MAX
+*/
 func main() {
-	var (
-		producerGroup sync.WaitGroup
-		consumerGroup sync.WaitGroup
-	)
+
+	var consumerGroup sync.WaitGroup // Declaro a lista de espera dos consumidores
+	
 	consumerGroup.Add(MAX)
-	producerGroup.Add(MAX)
 
 	for i := 0; i < MAX; i++ {
-		go producer(i,&producerGroup)
+		go producer(i)
 	}
 
 	for i := 0; i < MAX; i++ {
 		go consumer(i, &consumerGroup)
 	}
+  
 
 	for !finished {
+	  // Acaba quando todos os produtores estiverem mortos e a lista estiver vazia
 		if !producing() && list.head == nil {
 			finished = true
 			break
 		} else {
+		  //Lista de palavras que já foram lidas recebidas da função abaixo
 			words_to_clean := findFinished()
-			if len(words_to_clean) != 0 { 
+			//se a lista de palavras não for nula, ativa o semáforo e retira da lista
+			//cada um que já foi lido
+			if len(words_to_clean) != 0 {
 				mut.Lock()
 				for _, word := range words_to_clean {
 					list.Delete(word)
-					
+
 				}
 				mut.Unlock()
 			}
-			time.Sleep(time.Second * 2)
+			time.Sleep(time.Second * 2) // espera 2 segundos
 		}
 	}
+	//espera os consumidores terminarem para dar fim ao código
 	consumerGroup.Wait()
 }
 
+// traversa a lista encadeada e procura todos os nós que não faltam consumidor a ler (toRead = 0)
+// retorna uma lista com todas as palavras que já foram lidas por todos
 func findFinished() (words []string) {
-  node := list.head
-  for node != nil {
-    if node.read == 0 {
-      words = append(words, node.word)    
-    }
-    node = node.next
-  }
-  return words
+	node := list.head
+	for node != nil {
+		if node.toRead == 0 {
+			words = append(words, node.word)
+		}
+		node = node.next
+	}
+	return words
 }
 
+// Se existir algum produtor que ainda está vivo, retorna verdadeiro, caso contrário falso
 func producing() bool {
-  for i:= 0; i < MAX;i++ {
-    if producerDead[i] {
-      return false
-    }
-  }
-  return true
+	for i := 0; i < MAX; i++ {
+		if !producerDead[i] {
+			return true
+		}
+	}
+	return false
 }
