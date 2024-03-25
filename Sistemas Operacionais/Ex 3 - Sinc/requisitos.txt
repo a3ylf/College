@@ -1,0 +1,10 @@
+1) Para a descrição a seguir, utilize Semáforos ou Monitores para garantir que a troca de mensagens entre Produtores e Consumidores seja sempre consistente.
+Descrição: Utilize Threads (em qualquer linguagem e sistema operacional) para implementar um programa de troca de mensagens que utiliza o protocolo Produtor-Consumidor, seguindo as seguintes regras:
+- Cada thread produtora enviará uma mensagem diferente para um buffer compartilhado. As mensagens devem ser enviadas palavra por palavra. Cada thread deve enviar uma palavra, esperar um tempo qualquer e depois enviar outra, até que a mensagem completa tenha sido enviada. Quando a mensagem terminar, a thread deve ser finalizada;
+- As threads consumidoras deverão checar o buffer, ler a última palavra não lida no buffer e imprimi-la na tela identificando seu próprio Thread ID;
+- Só há um buffer central gerenciado pela thread main. Ela deve controlar para apagar a última mensagem lida só depois que cada thread consumidora lê-la;
+- Deve haver 4 threads produtoras e 4 threads consumidoras
+
+2) Aumente a quantidade de threads e apresente uma demonstração de que as mensagens estão sincronizadas em todos os casos.
+
+Em seguida gere um arquivo PDF único, contendo: sua identificação, o código fonte comentado, e a saída no terminal, incluindo os comandos de compilação e execução.
