@@ -1,4 +1,5 @@
 package main
+
 /*
 Os tempos dos produtores, consumidores e da limpeza do buffer estão fora de sincronia
 para mostrar que isso não faz diferença
@@ -107,23 +108,23 @@ func producer(id int) {
 	}
 	// para fins de debug eu dou print na frase inteira, porém isso não consta nos requisitos
 	fmt.Println("frase: " + frase[0] + " " + frase[1] + " " + frase[2] + " " + frase[3])
-  // Versão 1: Envia a frase inteira palavra por palavra e depois libera o semáforo
-  // Dessa forma a frase fica na sequência correta, na versão 2 não, muito mais lenta que a versão 2
+	// Versão 1: Envia a frase inteira palavra por palavra e depois libera o semáforo
+	// Dessa forma a frase fica na sequência correta, na versão 2 não, muito mais lenta que a versão 2
 	mut.Lock()
-  for _, word := range frase {
-    list.Insert(word) 
-    time.Sleep(time.Millisecond * 500) // espera meio segundo
-  }
-  mut.Unlock()
-  /*versão 2: Enviando uma palavra por vez e abrindo o semáforo
-  for _, word := range frase {
-		//envia uma palvra por vez ao buffer e espera 1 segundo, semáforo cerca a inserção na lista
-		mut.Lock()
+	for _, word := range frase {
 		list.Insert(word)
-		mut.Unlock()
-		time.Sleep(time.Second) //espera 1 segundo
+		time.Sleep(time.Millisecond * 500) // espera meio segundo
 	}
-*/
+	mut.Unlock()
+	/*versão 2: Enviando uma palavra por vez e abrindo o semáforo
+	  for _, word := range frase {
+			//envia uma palvra por vez ao buffer e espera 1 segundo, semáforo cerca a inserção na lista
+			mut.Lock()
+			list.Insert(word)
+			mut.Unlock()
+			time.Sleep(time.Second) //espera 1 segundo
+		}
+	*/
 	// se chegou aqui, é porque terminou de enviar sua frase inteira, logo, este produtor
 	// terminou sua função e morreu
 	producerDead[id] = true
@@ -151,10 +152,10 @@ func consume(node *Node, id int) {
 	}
 }
 
-/* 
+/*
   waitGroup nesse caso é utilizado para fazer a thread principal esperar os
   consumidores terminarem para poder finalizar o código
-  
+
   enquanto a thread main não sinalizar que acabou, continua.const
   Se a lista encadeada não estiver vazia no momento, chama a função acima de consumir
   espera 200 milisegundos
@@ -163,7 +164,7 @@ func consumer(id int, wg *sync.WaitGroup) {
 	defer wg.Done()
 	for !finished {
 		if list.head != nil {
-		  //semáforo ativa na hora de consumir
+			//semáforo ativa na hora de consumir
 			mut.Lock()
 			consume(list.head, id)
 			mut.Unlock()
@@ -171,6 +172,7 @@ func consumer(id int, wg *sync.WaitGroup) {
 		}
 	}
 }
+
 /*
 Em go, uma função é concorrente quando se coloca o prefixo go antes de chamar ela,
 no caso estou criando 4 produtores e 4 consumidores, esse numero pode ser facilmente
@@ -179,7 +181,7 @@ modificado ao alterar a variável global MAX
 func main() {
 
 	var consumerGroup sync.WaitGroup // Declaro a lista de espera dos consumidores
-	
+
 	consumerGroup.Add(MAX)
 
 	for i := 0; i < MAX; i++ {
@@ -189,15 +191,14 @@ func main() {
 	for i := 0; i < MAX; i++ {
 		go consumer(i, &consumerGroup)
 	}
-  
 
 	for !finished {
-	  // Acaba quando todos os produtores estiverem mortos e a lista estiver vazia
+		// Acaba quando todos os produtores estiverem mortos e a lista estiver vazia
 		if !producing() && list.head == nil {
 			finished = true
 			break
 		} else {
-		  //Lista de palavras que já foram lidas recebidas da função abaixo
+			//Lista de palavras que já foram lidas recebidas da função abaixo
 			words_to_clean := findFinished()
 			//se a lista de palavras não for nula, ativa o semáforo e retira da lista
 			//cada um que já foi lido
