@@ -1,0 +1,9 @@
+1) Desenvolva utilizando a linguagem de programação de sua preferência a gerência do sistema de paginação através de uma tabela de páginas. Os principais requisitos são:
+a) O usuário deve inicialmente escolher a configuração do sistema de paginação: tamanho dos quadros e quantidade de quadros na memória.
+b) Em seguida o usuário passa uma sequencia de endereços que deverão ser acessados na memória
+c) A cada requisição, o sistema deverá imprimir a situação da Tabela de Páginas para confirmar que a execução está correta, se houve Page Fault naquela requisição.
+d) Em caso de Page Fault, mostrar que página foi escolhida para substituição, utilizando qualquer algoritmo de sua escolha
+
+2) Apresente os resultados de um exemplo de execução com pelo menos 10 requisições. Escolha uma configuração pequena de memória para ficar mais fácil de observar.  
+
+Em seguida gere um arquivo PDF único, contendo: sua identificação, o código fonte comentado, e as saídas no terminal (apenas prints de tela serão aceitos).
